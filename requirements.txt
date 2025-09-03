@@ -1,0 +1,49 @@
+# SCALE System v2.0 - Professional Weighbridge Management System
+# Python Dependencies
+
+# Core Dependencies
+sqlite3
+queue
+threading
+time
+datetime
+re
+json
+csv
+base64
+hashlib
+uuid
+pattern
+Pathlib
+
+# Serial Communication - Enhanced RS232 Support
+# Supports baud rates: 9600, 19200, 38400, 115200 (user requested)
+# Additional rates: 1200, 2400, 4800, 57600
+pyserial==3.5
+
+# QR Code Generation
+qrcode[pil]==8.2
+Pillow>=8.0.0
+
+# Data Processing
+decimal
+
+# Optional: GUI Framework (for Phase 3)
+# PyQt6>=6.0.0
+# PyQt6-tools>=6.0.0
+
+# Optional: Template Engine (for Phase 3)
+# Jinja2>=3.0.0
+
+# Optional: PDF Generation (for Phase 3)
+# reportlab>=3.6.0
+# weasyprint>=60.0
+
+# Optional: Excel Export (for Phase 3)
+# openpyxl>=3.0.0
+
+# Development Dependencies (Optional)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=4.0.0

@@ -1,0 +1,35 @@
+{
+  "export_info": {
+    "exported_at": "2025-08-23 19:43:00",
+    "total_records": 2,
+    "exported_by": "test_user"
+  },
+  "transactions": [
+    {
+      "id": 1,
+      "ticket_no": "SC000001",
+      "vehicle_no": "ABC-123",
+      "gross_weight": 15250.5,
+      "tare_weight": 8750.0,
+      "net_weight": 6500.5,
+      "product": "Rice",
+      "customer": "ABC Company",
+      "operator": "admin",
+      "status": "complete",
+      "created_at_utc": "2025-08-23 19:43:00"
+    },
+    {
+      "id": 2,
+      "ticket_no": "SC000002",
+      "vehicle_no": "XYZ-456",
+      "gross_weight": 22100.0,
+      "tare_weight": 9800.5,
+      "net_weight": 12299.5,
+      "product": "Wheat",
+      "customer": "XYZ Corp",
+      "operator": "operator",
+      "status": "complete",
+      "created_at_utc": "2025-08-23 19:42:00"
+    }
+  ]
+}
