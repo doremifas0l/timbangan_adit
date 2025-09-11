@@ -40,7 +40,7 @@ class RS232Config:
     
     def __post_init__(self):
         # Validate RS232 settings
-        valid_baud_rates = [9600, 19200, 38400, 115200]
+        valid_baud_rates = [300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 115200]
         if self.baud_rate not in valid_baud_rates:
             raise ValueError(f"Invalid baud rate: {self.baud_rate}. Must be one of {valid_baud_rates}")
         
@@ -364,7 +364,7 @@ class RS232Manager:
     def auto_detect_baud_rate(self, port: str, test_message: str = "TEST\r\n") -> Optional[int]:
         """Auto-detect baud rate by testing common rates"""
         
-        test_rates = [9600, 19200, 38400, 115200]  # User requested rates
+        test_rates = [300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 115200]  # User requested rates
         
         for baud_rate in test_rates:
             self.logger.info(f"Testing baud rate {baud_rate}...")
