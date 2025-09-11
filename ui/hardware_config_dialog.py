@@ -347,7 +347,7 @@ class HardwareConfigDialog(QDialog):
         baud_layout.addWidget(QLabel("Baud Rate:"), 0, 0)
         
         self.baud_combo = QComboBox()
-        self.baud_combo.addItems(["9600", "19200", "38400", "115200"])
+        self.baud_combo.addItems(["300", "600", "1200", "2400", "4800", "9600", "19200", "38400", "115200"])
         self.baud_combo.setCurrentText("9600")
         baud_layout.addWidget(self.baud_combo, 0, 1)
         
@@ -623,7 +623,7 @@ Error: {test_result.get('error', 'None')}"""
             return
         
         # Test with all supported baud rates
-        baud_rates = [9600, 19200, 38400, 115200]
+        baud_rates = [300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 115200]
         
         self.auto_detect_baud_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
