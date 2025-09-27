@@ -35,6 +35,7 @@ from hardware.rs232_manager import RS232Manager, RS232Config
 from ui.hardware_config_dialog import HardwareConfigDialog
 from ui.login_dialog import LoginDialog
 from ui.master_data_management import MasterDataDialog
+from ui.user_management_dialog import UserManagementDialog
 from utils.helpers import (
     format_timestamp, format_weight, generate_uuid, 
     export_to_csv, export_to_json, format_file_size
@@ -775,15 +776,20 @@ class MainWindow(QMainWindow):
         user_mgmt_layout = QVBoxLayout()
         
         self.users_table = QTableWidget()
-        self.users_table.setColumnCount(4)
-        self.users_table.setHorizontalHeaderLabels(["Username", "Role", "Status", "Last Login"])
+        self.users_table.setColumnCount(3)
+        self.users_table.setHorizontalHeaderLabels(["Username", "Role", "Status"])
+        self.users_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.users_table.setAlternatingRowColors(True)
         
         user_mgmt_layout.addWidget(self.users_table)
         
         user_btn_layout = QHBoxLayout()
         add_user_btn = QPushButton("➕ Add User")
+        add_user_btn.clicked.connect(self.add_user)
         edit_user_btn = QPushButton("✏️ Edit User")
+        edit_user_btn.clicked.connect(self.edit_user)
         delete_user_btn = QPushButton("🗑️ Delete User")
+        delete_user_btn.clicked.connect(self.delete_user)
         
         user_btn_layout.addWidget(add_user_btn)
         user_btn_layout.addWidget(edit_user_btn)
@@ -1607,27 +1613,102 @@ class MainWindow(QMainWindow):
             print(f"Error refreshing transactions: {e}")
     
     def load_users_data(self):
-        """Load users data into the users table"""
-        
+        """Load users data into the users table from the database."""
         try:
-            # This would load from the authentication service
-            # For now, just placeholder
-            users = [
-                {'username': 'admin', 'role': 'Admin', 'status': 'Active', 'last_login': '2025-08-23 16:30:00'},
-                {'username': 'supervisor', 'role': 'Supervisor', 'status': 'Active', 'last_login': '2025-08-23 15:45:00'},
-                {'username': 'operator', 'role': 'Operator', 'status': 'Active', 'last_login': '2025-08-23 14:20:00'}
-            ]
-            
+            users = self.data_access.get_all_users()
             self.users_table.setRowCount(len(users))
             
             for row, user in enumerate(users):
-                self.users_table.setItem(row, 0, QTableWidgetItem(user['username']))
+                username_item = QTableWidgetItem(user['username'])
+                # Store user ID in the item for easy retrieval
+                username_item.setData(Qt.ItemDataRole.UserRole, user['id'])
+                self.users_table.setItem(row, 0, username_item)
+
                 self.users_table.setItem(row, 1, QTableWidgetItem(user['role']))
-                self.users_table.setItem(row, 2, QTableWidgetItem(user['status']))
-                self.users_table.setItem(row, 3, QTableWidgetItem(user['last_login']))
+
+                status = "Active" if user['is_active'] else "Inactive"
+                self.users_table.setItem(row, 2, QTableWidgetItem(status))
                 
         except Exception as e:
-            print(f"Error loading users: {e}")
+            QMessageBox.critical(self, "Error Loading Users", f"Could not load user data: {e}")
+
+    def add_user(self):
+        """Open a dialog to add a new user."""
+        dialog = UserManagementDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            data = dialog.get_user_data()
+            if data:
+                try:
+                    self.data_access.add_user(
+                        username=data['username'],
+                        role=data['role'],
+                        pin=data['pin'],
+                        is_active=data['is_active'],
+                        operator_id=self.current_user['id']
+                    )
+                    QMessageBox.information(self, "Success", "User added successfully.")
+                    self.load_users_data()
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Failed to add user: {e}")
+
+    def edit_user(self):
+        """Open a dialog to edit the selected user."""
+        current_row = self.users_table.currentRow()
+        if current_row < 0:
+            QMessageBox.warning(self, "No User Selected", "Please select a user to edit.")
+            return
+
+        user_id = self.users_table.item(current_row, 0).data(Qt.ItemDataRole.UserRole)
+        # Fetch full user data for the dialog
+        # This is a simplified approach; ideally, you'd have a get_user_by_id method
+        users = self.data_access.get_all_users()
+        user_data = next((u for u in users if u['id'] == user_id), None)
+
+        if user_data:
+            dialog = UserManagementDialog(self, user_data)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                data = dialog.get_user_data()
+                if data:
+                    try:
+                        self.data_access.update_user(
+                            user_id=user_id,
+                            role=data['role'],
+                            pin=data['pin'],
+                            is_active=data['is_active'],
+                            operator_id=self.current_user['id']
+                        )
+                        QMessageBox.information(self, "Success", "User updated successfully.")
+                        self.load_users_data()
+                    except Exception as e:
+                        QMessageBox.critical(self, "Error", f"Failed to update user: {e}")
+
+    def delete_user(self):
+        """Delete the selected user."""
+        current_row = self.users_table.currentRow()
+        if current_row < 0:
+            QMessageBox.warning(self, "No User Selected", "Please select a user to delete.")
+            return
+
+        username = self.users_table.item(current_row, 0).text()
+        user_id = self.users_table.item(current_row, 0).data(Qt.ItemDataRole.UserRole)
+
+        if username == self.current_user.get('username'):
+            QMessageBox.critical(self, "Action Not Allowed", "You cannot delete your own account.")
+            return
+
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete the user '{username}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                self.data_access.delete_user(user_id, self.current_user['id'])
+                QMessageBox.information(self, "Success", "User deleted successfully.")
+                self.load_users_data()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete user: {e}")
     
     # Placeholder methods for menu actions
     def logout(self):

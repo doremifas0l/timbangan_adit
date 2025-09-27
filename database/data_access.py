@@ -472,6 +472,53 @@ class DataAccessLayer:
             return self._create_audit_log(conn, operator_id, action, entity, 
                                         entity_id, reason, before_state, after_state)
 
+    def get_all_users(self) -> List[Dict]:
+        """Retrieve all users from the database."""
+        with self.get_connection() as conn:
+            users = conn.execute(
+                "SELECT id, username, role, is_active FROM users ORDER BY username"
+            ).fetchall()
+            return [dict(row) for row in users]
+
+    def add_user(self, username: str, role: str, pin: Optional[str], is_active: bool, operator_id: str) -> str:
+        """Add a new user to the database."""
+        with self.get_connection() as conn:
+            new_id = str(uuid.uuid4())
+            pin_hash = hashlib.sha256(pin.encode()).hexdigest() if pin else None
+            current_time = datetime.utcnow().isoformat()
+
+            conn.execute("""
+                INSERT INTO users (id, username, role, pin_hash, is_active, created_at_utc, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (new_id, username, role, pin_hash, is_active, current_time, operator_id))
+
+            self._create_audit_log(conn, operator_id, 'ADD_USER', 'users', new_id, f'User {username} created')
+            conn.commit()
+            return new_id
+
+    def update_user(self, user_id: str, role: str, pin: Optional[str], is_active: bool, operator_id: str):
+        """Update an existing user's details."""
+        with self.get_connection() as conn:
+            if pin:
+                pin_hash = hashlib.sha256(pin.encode()).hexdigest()
+                conn.execute("""
+                    UPDATE users SET role = ?, pin_hash = ?, is_active = ? WHERE id = ?
+                """, (role, pin_hash, is_active, user_id))
+            else: # Keep old pin
+                conn.execute("""
+                    UPDATE users SET role = ?, is_active = ? WHERE id = ?
+                """, (role, is_active, user_id))
+
+            self._create_audit_log(conn, operator_id, 'UPDATE_USER', 'users', user_id, f'User {user_id} updated')
+            conn.commit()
+
+    def delete_user(self, user_id: str, operator_id: str):
+        """Delete a user from the database."""
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            self._create_audit_log(conn, operator_id, 'DELETE_USER', 'users', user_id, f'User {user_id} deleted')
+            conn.commit()
+
 
 if __name__ == "__main__":
     # Test data access layer

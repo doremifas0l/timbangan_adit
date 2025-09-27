@@ -145,6 +145,7 @@ class LoginDialog(QDialog):
                 border-radius: 6px;
                 background-color: white;
                 font-size: 14px;
+                min-height: 20px;
             }
             QLineEdit:focus {
                 border: 2px solid #0078d4;
