@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 Database Initialization Script
-Ensures the database is properly set up for testing
+Ensures the database is properly set up with the correct schema and default data.
 """
 
 import sys
 import os
+import sqlite3
 from pathlib import Path
 
 # Add the scale_system directory to Python path
@@ -14,50 +15,44 @@ sys.path.insert(0, str(Path(__file__).parent))
 def initialize_database():
     """Initialize the database with proper schema and test data"""
     try:
-        from database.data_access import DataAccessLayer
+        from database.schema import DatabaseSchema
         from core.config import DATABASE_PATH
-        
-        # Ensure database directory exists
-        DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
         
         print(f"Initializing database at: {DATABASE_PATH}")
         
-        # Create database connection
-        db = DataAccessLayer(str(DATABASE_PATH))
+        # Ensure the parent directory exists
+        DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
         
-        # Create tables if they don't exist
-        with db.get_connection() as conn:
-            # Test database connection
-            conn.execute("SELECT 1").fetchone()
-            print("[PASS] Database connection successful")
+        # Initialize schema
+        schema = DatabaseSchema(str(DATABASE_PATH))
+        schema.initialize_database()
+
+        print("[PASS] Database schema creation process completed.")
+
+        # Verify table creation
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            tables_cursor = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            )
+            table_names = [row[0] for row in tables_cursor.fetchall()]
+            print(f"Tables found: {table_names}")
             
-            # Check if tables exist
-            tables = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
+            required_tables = ['products', 'parties', 'transporters', 'users', 'transactions']
+            missing_tables = [t for t in required_tables if t not in table_names]
             
-            table_names = [table[0] for table in tables]
-            print(f"Existing tables: {table_names}")
-            
-            if not table_names:
-                print("[INFO] No tables found, database needs initialization")
-                # You might want to run schema initialization here
+            if not missing_tables:
+                 print("[PASS] All required master data and transaction tables are present.")
             else:
-                print(f"[PASS] Database has {len(table_names)} tables")
-        
-        # Test creating default users
-        try:
-            from auth.auth_service import AuthenticationService
-            auth_service = AuthenticationService()
-            print("[PASS] Authentication service initialized")
-        except Exception as e:
-            print(f"[WARNING] Auth service initialization: {e}")
-        
+                 print(f"[FAIL] Missing required tables: {missing_tables}")
+                 return False
+
         print("[PASS] Database initialization complete")
         return True
         
     except Exception as e:
         print(f"[FAIL] Database initialization failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 if __name__ == "__main__":
@@ -65,8 +60,8 @@ if __name__ == "__main__":
     print("=" * 50)
     
     if initialize_database():
-        print("\n[SUCCESS] Database is ready for use")
+        print("\n[SUCCESS] Database is ready for use.")
         sys.exit(0)
     else:
-        print("\n[FAIL] Database initialization failed")
+        print("\n[FAIL] Database initialization failed.")
         sys.exit(1)

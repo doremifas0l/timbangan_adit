@@ -168,7 +168,7 @@ class HardwareConfigDialog(QDialog):
         
         self.setup_ui()
         self.setup_timers()
-        self.start_initial_scan()
+        # self.start_initial_scan() # Deactivated by default
     
     def setup_ui(self):
         """Setup the user interface"""
@@ -220,6 +220,7 @@ class HardwareConfigDialog(QDialog):
                 border: 1px solid #cccccc;
                 border-radius: 4px;
                 background-color: white;
+                min-height: 20px;
             }
             QLineEdit {
                 padding: 6px;
@@ -228,6 +229,7 @@ class HardwareConfigDialog(QDialog):
                 background-color: white;
             }
             QTextEdit {
+                padding: 4px;
                 border: 1px solid #cccccc;
                 border-radius: 4px;
                 background-color: white;
@@ -460,26 +462,41 @@ class HardwareConfigDialog(QDialog):
         
         # Profile selection group
         profile_group = QGroupBox("Hardware Profiles")
-        profile_layout = QGridLayout()
-        
-        profile_layout.addWidget(QLabel("Select Profile:"), 0, 0)
-        
+        profile_layout = QVBoxLayout() # Use QVBoxLayout for vertical stacking
+
+        # Explanatory label
+        description_label = QLabel(
+            "Profiles allow you to save and quickly load hardware settings for different weighing indicators. "
+            "Configure your settings in the 'Port Detection' and 'Manual Config' tabs, then save them as a new profile here."
+        )
+        description_label.setWordWrap(True)
+        description_label.setStyleSheet("font-weight: normal; font-style: italic; color: #333; padding-bottom: 10px;")
+        profile_layout.addWidget(description_label)
+
+        # Grid for the controls
+        controls_layout = QGridLayout()
+        controls_layout.addWidget(QLabel("Select Profile:"), 0, 0)
+
         self.profile_combo = QComboBox()
         self.load_profiles()
         self.profile_combo.currentTextChanged.connect(self.on_profile_selection_changed)
-        profile_layout.addWidget(self.profile_combo, 0, 1)
-        
+        controls_layout.addWidget(self.profile_combo, 0, 1)
+
         self.load_profile_btn = QPushButton("📁 Load Profile")
         self.load_profile_btn.clicked.connect(self.load_selected_profile)
-        profile_layout.addWidget(self.load_profile_btn, 0, 2)
-        
+        controls_layout.addWidget(self.load_profile_btn, 0, 2)
+
         # Profile details
-        profile_layout.addWidget(QLabel("Profile Details:"), 1, 0)
+        profile_details_label = QLabel("Profile Details:")
+        profile_details_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        controls_layout.addWidget(profile_details_label, 1, 0)
+
         self.profile_details_text = QTextEdit()
         self.profile_details_text.setMaximumHeight(120)
         self.profile_details_text.setReadOnly(True)
-        profile_layout.addWidget(self.profile_details_text, 1, 1, 1, 2)
-        
+        controls_layout.addWidget(self.profile_details_text, 1, 1, 1, 2)
+
+        profile_layout.addLayout(controls_layout)
         profile_group.setLayout(profile_layout)
         layout.addWidget(profile_group)
         
